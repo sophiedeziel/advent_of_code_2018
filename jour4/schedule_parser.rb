@@ -25,7 +25,7 @@ class ScheduleParser
 
   def check_shift(line)
     if shift = line.match(SHIFT_PATTERN)
-      @current_guard = shift[:id]
+      @current_guard = shift[:id].to_i
       @current_sleep = nil
     end
   end
