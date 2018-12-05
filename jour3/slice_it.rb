@@ -9,29 +9,32 @@ def parse_claim(string)
   [id, x, y, width, height]
 end
 
+def list_coordinates(x,y,width,height)
+  (x...(x+width)).flat_map do |x|
+    (y...(y+height)).map do |y|
+      x.to_s + 'x' + y.to_s
+    end
+  end
+end
+
 claims = File.open('input.txt', 'r').map do |line|
   parse_claim(line)
 end
 
 claims.each do |_id,x,y,width,height|
-  (0...width).each do |rect_x|
-    (0...height).each do |rect_y|
-      fabric[x + rect_x] = {} if fabric[x + rect_x].nil?
-      if fabric.dig(x + rect_x, y + rect_y).nil?
-        fabric[x + rect_x][y + rect_y] = 1
-      else
-        overlaps += 1 if fabric[x + rect_x][y + rect_y] == 1
-        fabric[x + rect_x][y + rect_y] +=1
-      end
+  list_coordinates(x,y,width,height).each do |key|
+    if fabric[key].nil?
+      fabric[key] = 1
+    else
+      overlaps += 1 if fabric[key] == 1
+      fabric[key] +=1
     end
   end
 end
 
 good_claim = claims.find do |id,x,y,width,height|
-  rectangle = (0...width).map do |rect_x|
-    (0...height).map do |rect_y|
-      fabric.dig(x + rect_x, y + rect_y)
-    end
+  rectangle = list_coordinates(x,y,width,height).map do |key|
+    fabric[key]
   end
   rectangle.flatten.all? 1
 end
