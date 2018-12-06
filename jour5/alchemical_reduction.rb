@@ -1,5 +1,5 @@
 final_string = []
-input = File.read('input.txt').to_s.tap {|s| s.gsub!("\n", '')}
+input = File.read('input.txt').delete("\n")
 
 def reduce_polymer(input_string)
   final_string = []
@@ -12,16 +12,19 @@ def reduce_polymer(input_string)
     final_string.push char
   end
 
-  final_string.join.size
+  final_string.size
 end
 
-experiments = ('a'...'z').map do |unit|
-  test_string = input.dup
-  test_string.gsub!(unit, '')
-  test_string.gsub!(unit.upcase, '')
+def optimized_polymer(input)
+  polymers = ('a'...'z').map do |unit|
+    test_string = input.dup
+    test_string.delete!(unit)
+    test_string.delete!(unit.upcase)
 
-  reduce_polymer(test_string)
+    reduce_polymer(test_string)
+  end
+  polymers.min
 end
 
 puts "Part 1 #{reduce_polymer(input)}"
-puts "Part 2 #{experiments.min}"
+puts "Part 2 #{optimized_polymer(input)}"
