@@ -1,26 +1,22 @@
-final_string = []
 input = File.read('input.txt').delete("\n")
 
 def reduce_polymer(input_string)
-  final_string = []
+  reduced_polymer = []
   input_string.each_char do |char|
-    last = final_string.pop
+    last = reduced_polymer.pop
 
     next if last&.downcase == char.downcase && last != char
 
-    final_string.push last if last
-    final_string.push char
+    reduced_polymer.push last if last
+    reduced_polymer.push char
   end
 
-  final_string.size
+  reduced_polymer.size
 end
 
 def optimized_polymer(input)
   polymers = ('a'...'z').map do |unit|
-    test_string = input.dup
-    test_string.delete!(unit)
-    test_string.delete!(unit.upcase)
-
+    test_string = input.dup.delete(unit).delete(unit.upcase)
     reduce_polymer(test_string)
   end
   polymers.min
