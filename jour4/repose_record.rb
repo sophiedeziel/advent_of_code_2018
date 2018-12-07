@@ -1,6 +1,3 @@
-require 'pry'
-require 'awesome_print'
-
 class Guard
   attr_accessor :id, :minutes_asleep, :asleep_by_minutes
   def initialize(id)
