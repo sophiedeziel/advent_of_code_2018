@@ -24,8 +24,9 @@ current_guard = nil
 current_sleep = nil
 
 records.sort.each do |line|
-  if shift  = line.match(/Guard #(?<id>\d+) begins shift/)
-    id = shift[:id].to_i
+  case line
+  when /begins shift/
+    id = line.match(/#(?<id>\d+)/)[:id].to_i
 
     unless current_guard = guards.find { |g| g.id == id }
       current_guard = Guard.new(id)
@@ -33,16 +34,11 @@ records.sort.each do |line|
     end
 
     current_sleep = nil
-  end
-
-  if fall_asleep = line.match(/\[.+:(?<minute>\d+)\] falls asleep/)
-    current_wake = nil
-    current_sleep = fall_asleep[:minute].to_i
-  end
-
-  if wakes_up = line.match(/\[.+:(?<minute>\d+)\] wakes up/)
-    current_wake = wakes_up[:minute].to_i
-    current_guard.register_sleep(current_sleep, current_wake)
+  when /falls asleep/
+    current_sleep = line.match(/\[.+:(?<minute>\d+)\]/)[:minute].to_i
+  when /wakes up/
+    wakes_up = line.match(/\[.+:(?<minute>\d+)\]/)[:minute].to_i
+    current_guard.register_sleep(current_sleep, wakes_up)
   end
 end
 
