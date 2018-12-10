@@ -1,40 +1,56 @@
+require 'pry'
 #478 players; last marble is worth 71240 points
 
-num_players = 478
+@num_players = 478
 highest_marble = 71240
 
-@players = (0...num_players).map{0}
+class Marble < Struct.new(:value, :previous, :next)
+  def destroy
+    self.previous.next = self.next
+    self.next.previous = self.previous
+  end
 
-@circle = [0]
+  def insert_after(marble)
+    marble.next        = self.next
+    marble.previous    = self
+    self.next.previous = marble
+    self.next          = marble
+  end
+end
 
-@current_marble_index = 0
-@current_marble = 0
-@current_player = 0
+@players = (0...@num_players).map{0}
+@current_marble = Marble.new(0, nil, nil)
+@current_marble.next     = @current_marble
+@current_marble.previous = @current_marble
+@value = 0
 
 def turn
-  points = 0
-  @current_marble +=1
-  @current_player = 0 if @current_player >= @players.count
-  @current_player += 1
+  @value += 1
+  new_marble = Marble.new(@value, nil, nil)
 
-  if @current_marble % 23 == 0
-    @current_marble_index = @current_marble_index - 7
-    @current_marble_index = @circle.count + @current_marble_index if @current_marble_index < 0
+  if new_marble.value % 23 == 0
+    7.times { @current_marble = @current_marble.previous }
+    points = @current_marble.value + new_marble.value
 
-    points = @circle.delete_at @current_marble_index
-    points += @current_marble
-    @players[@current_player - 1] += points
+    @players[@value % @num_players] += points
+    @current_marble.destroy
+
+    @current_marble = @current_marble.next
   else
-    @current_marble_index = ((@current_marble_index + 1) % @circle.count) +1
-    @circle.insert(@current_marble_index, @current_marble)
+    @current_marble = @current_marble.next
+    @current_marble.insert_after(new_marble)
+
+    @current_marble = new_marble
   end
 end
 
 highest_marble.times do
-  print "#{(@current_marble / highest_marble.to_f * 100.0 ).round(2)}%\r"
-  $stdout.flush
   turn
 end
-
 puts "Part 1: #{@players.max}"
+
+(highest_marble * 100 - highest_marble).times do
+  turn
+end
+puts "Part 2: #{@players.max}"
 
