@@ -1,6 +1,4 @@
-require 'pry'
 class Point < Struct.new(:x, :y, :vx, :vy)
-
   def move
     self.x += self.vx
     self.y += self.vy
@@ -12,7 +10,7 @@ class Point < Struct.new(:x, :y, :vx, :vy)
   end
 end
 
-@points = File.open('example.txt').map do |line|
+@points = File.open('input.txt').map do |line|
   data = line.match /position=<( *-*\d+), ( *-*\d+)> velocity=<( *-*\d+), ( *-*\d+)>/
   Point.new(*data[1..4].map(&:to_i))
 end
@@ -26,15 +24,27 @@ def bounding_box_area
   (box[1].x - box[0].x) * (box[1].y - box[0].y)
 end
 
-last_rectangle = nil
-nb = 0
 begin
   last_rectangle = bounding_box_area
   @points.each(&:move)
-  nb += 1
 end while(last_rectangle > bounding_box_area)
 
-puts @points.each(&:revert)
-puts nb
+@points.each(&:revert)
 
+box = bounding_box
+output = []
+
+(0..(box[1].y - box[0].y )).each do |y|
+  output[y] ||= []
+  (0..(box[1].x - box[0].x )).each do |x|
+    output[y][x] ||= ' '
+  end
+end
+
+@points.each do |point|
+  output[point.y - box[0].y][point.x - box[0].x] = "#"
+end
+
+puts "Part 1:"
+puts output.map{|v| v.join('') }.join("\n")
 
