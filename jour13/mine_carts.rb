@@ -71,16 +71,18 @@ File.open('input.txt').each_with_index do |line, y|
   end
 end
 
-
-collition = false
-while(collition == false)
+first_collition = nil
+while($carts.count > 1)
   $carts.sort_by { |cart| [cart.y, cart.x] }.each do |cart|
     cart.move
-    if $carts.count { |c| c.x == cart.x && c.y == cart.y } > 1
-      collition = cart
+    current_position = $carts.find_all { |c| c.x == cart.x && c.y == cart.y }
+    if current_position.count > 1
+      puts "Part 1: #{current_position.first.x},#{current_position.first.y}" if first_collition.nil?
+      first_collition ||= cart
+      $carts -= current_position
     end
   end
 end
 
-puts "Part 1: #{collition.x},#{collition.y}"
+puts "Part 2: #{$carts.first.x},#{$carts.first.y}"
 
