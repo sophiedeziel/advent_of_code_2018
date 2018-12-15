@@ -1,59 +1,68 @@
-require 'pry'
 class Point
-  attr_accessor :x, :y, :value, :sum
+  attr_accessor :x, :y, :value
 
-  def initialize(x, y)
+  def initialize(x, y, sn)
     @x = x
     @y = y
-    @value = initial_value
-    @sum   = integral_value
-  end
-
-  def square_value(size)
-    return 0 if @x > 300 - size
-    return 0 if @y > 300 - size
-    a = $grid[@x - 1][@y - 1]
-    b = $grid[@x + size - 1][@y - 1]
-    c = $grid[@x - 1][@y + size - 1]
-    d = $grid[@x + size - 1][@y  + size - 1]
-    d.sum - b.sum - c.sum + a.sum
-  end
-
-  def initial_value
     rack_id = @x + 10
-    hundreds = ((rack_id * @y + $sn) * rack_id).digits[2]
-    hundreds - 5
-  end
-
-  def integral_value
-    return 0 if @x == 0
-    return 0 if @y == 0
-    a = $grid[@x][@y - 1].sum
-    b = $grid[@x - 1][@y].sum
-    c = $grid[@x - 1][@y - 1].sum
-    a + b + @value - c
+    hundreds = ((rack_id * @y + sn) * rack_id).digits[2]
+    @value = hundreds - 5
   end
 end
 
-$sn = 8979
-size = 300
-$grid = Array.new(size) { Array.new(size, nil) }
+class Grid
+  attr_accessor :points, :size, :integral_image
 
-(0...size).each do |x|
-  (0...size).each do |y|
-    $grid[x][y] = Point.new(x, y)
+  def initialize(size, sn)
+    @size   = size
+    @points = []
+    @integral_image = Array.new(size) { Array.new(size, 0) }
+
+    (1...@size).each do |x|
+      (1...@size).each do |y|
+        point = Point.new(x, y, sn)
+        @points << point
+        @integral_image[x][y] = integral_value(point)
+      end
+    end
+  end
+
+  def get_square(x, y, size)
+    w = x + size - 1
+    h = y + size - 1
+
+    a = @integral_image[x][y]
+    b = @integral_image[w][y]
+    c = @integral_image[x][h]
+    d = @integral_image[w][h]
+
+    [a,b,c,d]
+  end
+
+  def integral_value(point)
+    a, b, c, d, = get_square(point.x - 1, point.y - 1, 2)
+    c + b + point.value - a
+  end
+
+  def square_value(point, size)
+    a, b, c, d, = get_square(point.x - 1, point.y - 1, size + 1)
+    d - b - c + a
   end
 end
 
-#puts $grid.map { |line| line.map{|point| point.value }.join(', ') }.join("\n")
-#puts $grid.map { |line| line.map{|point| point.sum }.join(', ') }.join("\n")
+grid = Grid.new(300, 8979)
 
-valid_points = $grid.flatten.reject { |point| point.x == 0 || point.y == 0 }
-
-max = valid_points.max_by { |point| point.square_value(3) }
+max = grid.points.max_by do |point|
+  next 0 if [point.x, point.y].max > grid.size - 3
+  grid.square_value(point, 3)
+end
 puts "Part 1: #{max.x},#{max.y}"
 
-max = valid_points.map do|point|
-  [point, (1..300).max_by { |size| point.square_value(size) }]
-end.max_by { |point, size| point.square_value(size) }
+max = grid.points.map do |point|
+  range = (1..(grid.size - [point.x, point.y].max))
+  [point, range.max_by { |size| grid.square_value(point, size) }]
+end.max_by do |point, size|
+  grid.square_value(point, size)
+end
+
 puts "Part 2: #{max[0].x},#{max[0].y},#{max[1]}"
