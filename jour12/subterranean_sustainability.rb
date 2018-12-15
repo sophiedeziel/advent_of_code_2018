@@ -15,7 +15,9 @@ initial_state.split('').each_with_index do |char, index|
   states[index - 1] = value
 end
 
-(1..100).each do |g|
+known_sequences = []
+
+(1..50000000000).each do |g|
   new_gen = {}
   states.each do |pot, state|
     l2 = states[pot - 2] || false
@@ -37,14 +39,19 @@ end
     new_gen.delete(first[0]) unless new_gen[first[0] + 1]
   end
 
+  this_score = new_gen.select { |k,v| v }.map { |k,v| k }.sum
+  puts "Part 1: #{this_score}" if g == 20
+
+  if known = known_sequences.find { |sequence| sequence.values == new_gen.values }
+    last_score = known.select { |k,v| v }.map { |k,v| k }.sum
+    puts "Part 2: #{this_score + (50000000000 - g) * (this_score - last_score)}"
+    break
+  else
+    known_sequences << new_gen
+  end
+
   states = new_gen
-  puts "Part 1: #{states.select { |k,v| v }.map { |k,v| k }.sum}" if g == 20
 end
-
-# En analysant les séquences, je me suis rendue compte qu'à la génération 100, le pattern se stabilise.
-# Le pattern ne fait qu'augmenter la somme par 62
-
-puts "Part 2: #{states.select { |k,v| v }.map { |k,v| k }.sum + (50000000000 - 100) * 62}"
 
 
 
