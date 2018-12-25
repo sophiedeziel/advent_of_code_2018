@@ -86,7 +86,7 @@ class Cavern
     if targets.any?
       min_hp = targets.map(&:hp).min
       target = reading_order(targets.select { |target| target.hp == min_hp }).first
-      target.hp -= 3
+      target.hp -= unit.ap
 
       if target.hp <= 0
         elves.delete(target)
@@ -145,38 +145,19 @@ end
 
 
 class Unit < Point
-  attr_accessor :type, :hp
+  attr_accessor :type, :hp, :ap
 
-  def initialize(x, y, type)
+  def initialize(x, y, type, ap)
     @x = x
     @y = y
     @type = type
+    @ap = ap
     @hp = 200
   end
 
   def move(point)
     @x = point.x
     @y = point.y
-  end
-end
-
-cavern = Cavern.new
-
-input = File.open('input.txt').each_with_index do |line, y|
-  line.chars.each_with_index do |char, x|
-    case char
-    when '#', '.'
-      cavern.map[x] ||= []
-      cavern.map[x][y] = char
-    when 'G'
-      cavern.map[x] ||= []
-      cavern.map[x][y] = '.'
-      cavern.goblins << Unit.new(x,y, :goblin)
-    when 'E'
-      cavern.map[x] ||= []
-      cavern.map[x][y] = '.'
-      cavern.elves << Unit.new(x,y, :elf)
-    end
   end
 end
 
@@ -188,7 +169,7 @@ def to_console(cavern)
   puts map.transpose.map {|line| line.join('') }.join("\n")
 end
 
-def play(file)
+def play(file, elves_ap = 3, interupt_on_elf_death = false)
   cavern = Cavern.new
 
   input = File.open(file).each_with_index do |line, y|
@@ -200,19 +181,21 @@ def play(file)
       when 'G'
         cavern.map[x] ||= []
         cavern.map[x][y] = '.'
-        cavern.goblins << Unit.new(x,y, :goblin)
+        cavern.goblins << Unit.new(x,y, :goblin, 3)
       when 'E'
         cavern.map[x] ||= []
         cavern.map[x][y] = '.'
-        cavern.elves << Unit.new(x,y, :elf)
+        cavern.elves << Unit.new(x,y, :elf, elves_ap)
       end
     end
   end
 
+  starting_elves_count = cavern.elves.count
   rounds = 0
   while cavern.round do
     rounds += 1
-    to_console(cavern)
+    return nil if interupt_on_elf_death && cavern.elves.count != starting_elves_count
+    #to_console(cavern)
   end
 
   rounds * cavern.all_units.map(&:hp).sum
@@ -238,3 +221,8 @@ examples = [
 
 outcome = play('input.txt')
 puts "Part 1: #{outcome}"
+ap = 15
+until outcome = play('input.txt', ap, true) do
+  ap += 1
+end
+puts "Part 2: #{outcome}"
