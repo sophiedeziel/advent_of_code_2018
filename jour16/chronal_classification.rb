@@ -111,5 +111,33 @@ end
 
 puts "Part 1 #{matching.count}"
 
+to_figure_out = {}
+instructions.each do |instruction|
+  instruction[:potential_operators].each do |name|
+    number = instruction[:operation].first
+    to_figure_out[number] ||= []
+    to_figure_out[number].push name unless to_figure_out[number].include? name
+  end
+end
 
+match = {}
+while to_figure_out.any? { |k, v| v.count >= 1 } do
+  number, names = to_figure_out.find { |k,v|  v.count == 1 }
+  if number
+    to_figure_out.delete(number)
+    to_figure_out.each do |k, v|
+      to_figure_out[k] = v - names
+    end
+    match[number] = names.first
+  else
+    binding.pry
+  end
+end
+
+computer = Computer.new([0,0,0,0])
+program_lines.each do |op, a, b, c|
+  computer.send(match[op], a, b, c) if op
+end
+
+puts "Part 2: #{computer.registers.first}"
 
