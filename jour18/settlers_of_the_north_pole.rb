@@ -58,9 +58,8 @@ class Land
       .map { |dy, dx| @scan[dy][dx] }
   end
 
-  def ressource_value(land = nil)
-    land ||= @scan
-    land.flatten.count(TREE) * land.flatten.count(LUMBERYARD)
+  def ressource_value
+    @scan.flatten.count(TREE) * @scan.flatten.count(LUMBERYARD)
   end
 end
 
