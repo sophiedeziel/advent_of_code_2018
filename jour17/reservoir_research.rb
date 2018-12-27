@@ -1,107 +1,92 @@
-require 'pry'
-require 'colorize'
+class Cascade
+  attr_accessor :slice, :streams
 
-Sand = '.'
-Water = '&'
-Clay = '#'
+  SAND = '.'
+  WATER = '~'
+  CLAY = '#'
+  STREAM = '|'
 
-def to_console(input)
-  slice = input.map(&:dup)
-  min_x = slice.index { |column| !column.all? /[.+]/ }
-  slice.shift(min_x - 1)
-  slice.transpose.each do |line|
-    puts line.join
+  def initialize(file)
+    parse(file)
+    source = @slice.index { |x| x[0] == STREAM }
+    @streams = [[source, 0]]
   end
-  puts
-end
 
-slice = Array.new
+  def parse(file)
+    clay = []
 
-File.open('input.txt').each do |line|
-  _line, axis, coordinate, *range = line.match(/([xy])=(\d+), [xy]=(\d+)..(\d+)/).to_a
-  coordinate = coordinate.to_i
-  range = Range.new(*range.map(&:to_i))
+    File.open(file).each do |line|
+      _line, axis, coordinate, *range = line.match(/([xy])=(\d+), [xy]=(\d+)..(\d+)/).to_a
+      coordinate = coordinate.to_i
+      range = Range.new(*range.map(&:to_i))
 
-  case axis
-  when 'x'
-    range.to_a.each do |y|
-      slice[coordinate] ||= []
-      slice[coordinate][y] = Clay
-    end
-  when 'y'
-    range.to_a.each do |x|
-      slice[x] ||= []
-      slice[x][coordinate] = Clay
-    end
-  end
-end
-
-max_x = slice.count + 1
-max_y = slice.max_by { |line| line&.count || 0 }.count
-
-complete_slice = Array.new(max_x) do
-  Array.new max_y, Sand
-end
-
-
-
-
-slice.each_with_index do |column, x|
-  column&.each_with_index do |value, y|
-    complete_slice[x][y] = value if value
-  end
-end
-
-min_y = complete_slice.transpose.index { |row| !row.all? /[.]/ }
-
-complete_slice.each do |column|
-  column.shift(min_y - 1)
-end
-
-complete_slice[500][0] = "+"
-streams = [[500, 0]]
-
-frames = 0
-while streams.any? do
-  frames += 1
-  x, y = streams.shift
-
-  if complete_slice[x][y + 1] == Sand
-    complete_slice[x][y + 1] = '|'
-    streams.push [x, y + 1]
-  elsif complete_slice[x][y + 1] == Water || complete_slice[x][y + 1] == Clay
-    if complete_slice[x + 1][y] == Sand
-      complete_slice[x + 1][y] = '|'
-      streams.push [x + 1, y]
-    end
-
-    if complete_slice[x - 1][y] == Sand
-      complete_slice[x - 1][y] = '|'
-      streams.push [x - 1, y]
-    end
-
-    settling = complete_slice.map{|x| x[y]}.join('').index(/#{Clay}[|]+#{Clay}/)
-
-      if settling
-        while complete_slice[settling + 1][y] == '|' do
-          complete_slice[settling + 1][y] = Water
-          settling += 1
-          streams.push [settling, y - 1] if complete_slice[settling][y - 1] == '|'
+      case axis
+      when 'x'
+        range.to_a.each do |y|
+          clay[coordinate] ||= []
+          clay[coordinate][y] = CLAY
+        end
+      when 'y'
+        range.to_a.each do |x|
+          clay[x] ||= []
+          clay[x][coordinate] = CLAY
         end
       end
+    end
+
+    @slice = Array.new(clay.count + 1) do
+      Array.new clay.max_by { |line| line&.count || 0 }.count, SAND
+    end
+
+    clay.each_with_index do |column, x|
+      column&.each_with_index do |value, y|
+        @slice[x][y] = value if value
+      end
+    end
+
+    @slice[500][0] = STREAM
+    min_x = @slice.index { |column| !column.all? SAND }
+    @slice.shift(min_x - 1)
+    @slice
+  end
+
+  def flow
+    x, y = streams.shift
+
+    case slice[x][y + 1]
+    when SAND
+      make_stream(x, y + 1)
+    when WATER, CLAY
+      make_stream(x + 1, y) if slice[x + 1][y] == SAND
+      make_stream(x - 1, y) if slice[x - 1][y] == SAND
+      settle_water(y)
+    end
+  end
+
+  def settle_water(y)
+    x = slice.map { |x| x[y] }.join.index /[#{CLAY}][#{STREAM}]+[#{CLAY}]/
+    return unless x
+    while slice[x + 1][y] == STREAM do
+      slice[x + 1][y] = WATER
+      x += 1
+      make_stream(x, y - 1) if slice[x][y - 1] == STREAM
+    end
+  end
+
+  def make_stream(x, y)
+    slice[x][y] = STREAM
+    streams.push [x, y]
+  end
+
+  def count(type)
+    slice.sum { |x| x.count(type) }
   end
 end
 
-water_touched = complete_slice.sum do |x|
-  x.count(Water) + x.count('|')
+cascade = Cascade.new('input.txt')
+while cascade.streams.any? do
+  cascade.flow
 end
 
-to_console(complete_slice)
-puts "Part 1: #{water_touched}"
-
-water_touched = complete_slice.sum do |x|
-  x.count(Water)
-end
-puts "Part 2: #{water_touched}"
-
-
+puts "Part 1: #{cascade.count(Cascade::WATER) + cascade.count(Cascade::STREAM)}"
+puts "Part 2: #{cascade.count(Cascade::WATER)}"
