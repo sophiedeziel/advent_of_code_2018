@@ -4,14 +4,28 @@ class Land
   GROUND = '.'
   LUMBERYARD = '#'
 
-  attr_accessor :scan
+  attr_accessor :scan, :known_scans
 
   def initialize(file)
     @scan = []
+    @known_scans = []
     File.open(file).each do |line|
       @scan << line.chomp.chars
     end
     @scan << []
+  end
+
+  def cycle(minutes)
+    (@known_scans.count...minutes).each do |g|
+      if known = @known_scans.index(@scan)
+        index = (minutes - @known_scans.count) % (@known_scans.count - known)
+        @scan = @known_scans[known + index]
+        break
+      else
+        @known_scans << @scan.map(&:dup)
+        minute
+      end
+    end
   end
 
   def minute
@@ -44,14 +58,15 @@ class Land
       .map { |dy, dx| @scan[dy][dx] }
   end
 
-  def ressource_value
-    @scan.flatten.count(TREE) * @scan.flatten.count(LUMBERYARD)
+  def ressource_value(land = nil)
+    land ||= @scan
+    land.flatten.count(TREE) * land.flatten.count(LUMBERYARD)
   end
 end
 
 land = Land.new('input.txt')
-puts land.scan.map &:join
-10.times do
-  land.minute
-end
-puts land.ressource_value
+land.cycle(10)
+puts "Part 1: #{land.ressource_value}"
+
+land.cycle(1000000000)
+puts "Part 2: #{land.ressource_value}"
